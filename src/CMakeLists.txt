@@ -1,0 +1,6 @@
+cmake_minimum_required( VERSION 3.24 )
+project( lif )
+find_package( pugixml REQUIRED )
+add_subdirectory( ../lester L3STER-bin )
+add_executable( ${CMAKE_PROJECT_NAME} source.cpp )
+target_link_libraries( ${CMAKE_PROJECT_NAME} L3STER pugixml )
