@@ -8,14 +8,12 @@ module load GCC/14.3.0
 module load CMake/4.0.3
 module add Eigen/3.4.0
 
-if ! test -d spack
+if ! test -f spack/share/spack/setup-env.sh
 then
-	git clone -c feature.manyFiles=true https://github.com/spack/spack.git
+	git clone -c feature.manyFiles=true -b releases/latest --depth 1 https://github.com/spack/spack.git
 fi
-cd spack
-git checkout tags/releases/latest
 
-. share/spack/setup-env.sh
+. spack/share/spack/setup-env.sh
 
 spack external find binutils cmake coreutils curl diffutils findutils git gmake openssh perl python sed tar
 
