@@ -4,6 +4,7 @@
 using namespace lstr;
 using std::numbers::pi;
 namespace fs = std::filesystem;
+constexpr double infty = std::numeric_limits<double>::infinity();
 
 constexpr dim_t dim = 3;
 constexpr el_o_t mesh_order  = 4;
@@ -94,6 +95,63 @@ int main(int argc, char* argv[])
     if (attr) mesh_elz = attr.as_int();
     if (dim > 2) XATRE(mesh_elz > 0, "Assertion failed: elz > 0\n");
 
+    struct cut_gauss_t {
+        double scale=1;
+        double x=0,y=0,z=0;
+        double x_sigma=infty,y_sigma=infty,z_sigma=infty;
+        double xmin=-infty,ymin=-infty,zmin=-infty;
+        double xmax=infty,ymax=infty,zmax=infty;
+        inline static double sq(double a, double b) {
+            double ret = a/b;
+            return ret*ret;
+        }
+        inline double operator() (double x0,double y0, double z0) const  {
+            if (x0 < xmin || x0 > xmax) return 0;
+            if (y0 < ymin || y0 > ymax) return 0;
+            if (z0 < zmin || z0 > zmax) return 0;
+            double ret = sq(x0-x,x_sigma) + sq(y0-y,y_sigma) + sq(z0-z,z_sigma);
+            return scale * exp(-ret);
+        }
+    };
+    struct field_def_t : public std::vector<cut_gauss_t> {
+        inline double operator() (double x0,double y0, double z0) const {
+            double ret = 0;
+            for (const auto& fun : *this) {
+                ret += fun(x0,y0,z0);
+            }
+            return ret;
+        }
+    };
+    const auto& from_xml = [](pugi::xml_node node) {
+        field_def_t ret;
+        for (pugi::xml_node child = node.first_child(); child; child = child.next_sibling()) {
+            std::string name = child.name();
+            if (name == "Gauss" || name == "Box") {
+                cut_gauss_t fun;
+                pugi::xml_attribute attr;
+                #define load_attr(member) attr = child.attribute(#member); if (attr) fun.member = attr.as_double()
+                load_attr(scale);
+                load_attr(x);
+                load_attr(y);
+                load_attr(z);
+                load_attr(x_sigma);
+                load_attr(y_sigma);
+                load_attr(z_sigma);
+                load_attr(xmin);
+                load_attr(ymin);
+                load_attr(zmin);
+                load_attr(xmax);
+                load_attr(ymax);
+                load_attr(zmax);
+                #undef load_attr
+                ret.push_back(fun);
+            } else {
+                TRE("Unknown function {} in {}", name, node.name());
+            }
+        }
+        return ret;
+    };
+
     pugi::xml_node rays = config.child("Rays");
     XATRE(rays, "No Rays element in {}", config.name());
     struct sphere_point_t {
@@ -150,7 +208,7 @@ int main(int argc, char* argv[])
         double emission=0;
     };
     std::vector<spec_elem_t> spectrum;
-    for (pugi::xml_node wave = waves.first_child(); wave; wave = wave.next_sibling()) {
+    for (pugi::xml_node wave : waves.children()) {
         XATRE(std::string(wave.name()) == "Wave", "Uknown element {} in {}", wave.name(), waves.name());
         spec_elem_t spec_elem;
         attr = wave.attribute("absorbtion");
@@ -162,6 +220,23 @@ int main(int argc, char* argv[])
         spectrum.push_back(spec_elem);
     }
     XATRE(spectrum.size() > 0, "No rays defined in {}",rays.name());
+
+
+    field_def_t concentration_def, volume_source_def, surf_source_def, empty_def;
+    std::map<size_t, field_def_t> surf_source_defs;
+
+    pugi::xml_node fun_node;
+    fun_node = config.child("Concentration");
+    XATRE(fun_node, "No Concentration element in {}", config.name());
+    concentration_def = from_xml(fun_node);
+    fun_node = config.child("VolumeSource");
+    if (fun_node) volume_source_def = from_xml(fun_node);
+    for (pugi::xml_node fun_node : config.children("SurfaceSource")) {
+        attr = fun_node.attribute("direction");
+        XATRE(attr, "{} needs a direction attribute", fun_node.name());
+        size_t dir = attr.as_int();
+        surf_source_defs[dir] = from_xml(fun_node);
+    }
 
     constexpr int domain_id = 0;
     constexpr auto boundary_ids = []{
@@ -216,10 +291,8 @@ int main(int argc, char* argv[])
 
         if (nx*vx + ny*vy + nz*vz < 0) {
             operators[0](0, 0) = 1;
-            const double r1 = fabs(z-mesh_Lz/2);
-            rhs[0] = theta * std::exp(- r1 * r1 / (0.2*0.2));
+            rhs[0] = gamma * surf_source_def(x,y,z);
         }
-        //rhs[0] = ;
     });
 
     const auto init_fun = [&](const auto& in, auto& out) {
@@ -254,14 +327,8 @@ int main(int argc, char* argv[])
         const auto x    = in.point.space.x();
         const auto y    = in.point.space.y();
         const auto z    = in.point.space.z();
-        out[0]= 0;
-        if ((x >= mesh_Lx/3 && x <= mesh_Lx*2/3)
-            &&(y >= mesh_Ly/3 && y <= mesh_Ly*2/3)
-            &&(z >= mesh_Lz/3 && z <= mesh_Lz*2/3)){
-                out[0] = 1.;
-        }
-        const double r1 = sqrt((x-mesh_Lx/2)*(x-mesh_Lx/2) + (y-mesh_Ly/2)* (y-mesh_Ly/2));
-        out[1] = std::exp(- r1 * r1 / (0.2*0.2));
+        out[0] = concentration_def(x,y,z);
+        out[1] = volume_source_def(x,y,z);
     };
     constexpr auto functions_kernel_params = KernelParams{.dimension = dim, .n_equations = 2};
     const auto functions_kernel = wrapDomainResidualKernel< functions_kernel_params >(analytical_functions);
@@ -318,11 +385,14 @@ int main(int argc, char* argv[])
                 vz = sp.vz;
                 kappa = wv.absorbtion;
                 lambda = wv.emission;
-                //gamma = wv.source;
-                if (i == 2 && j == 0) {
-                    theta = 1;
-                } else {
-                    theta = 0;
+                gamma = wv.source;
+                {   // surf_source_def = surf_source_defs[i];
+                    auto it = surf_source_defs.find(i);
+                    if (it == surf_source_defs.end()) {
+                        surf_source_def = empty_def;
+                    } else {
+                        surf_source_def = it->second;
+                    }
                 }
 
                 printf("Iteration %3d: solving for %3d wavelength, %3d direction (%.3lf,%.3lf,%.3lf) \n", (int) iter, (int) j, (int) i, vx,vy,vz);

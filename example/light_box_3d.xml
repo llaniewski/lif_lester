@@ -1,8 +1,14 @@
 <LIF dim="3">
-    <Geometry Lx="3" Ly="3" Lz="3" elx="20" ely="20" elz="20"/>
-    <Rays set="lebedev/lebedev_031.txt"/>
+    <Geometry Lx="3" Ly="3" Lz="3" elx="2" ely="2" elz="2"/>
+    <Rays set="lebedev/lebedev_011.txt"/>
     <Waves>
         <Wave absorbtion="0.9" emission="0.4" source="1.0"/>
         <Wave absorbtion="0.3" emission="0.8"/>
     </Waves>
+    <Concentration>
+        <Box xmin="1" xmax="2" ymin="1" ymax="2" zmin="1" zmax="2"/>
+    </Concentration>
+    <SurfaceSource direction="2">
+        <Gauss z="1.5" z_sigma="0.5"/>
+    </SurfaceSource>
 </LIF>
