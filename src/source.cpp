@@ -116,15 +116,13 @@ int main(int argc, char* argv[])
     struct field_def_t : public std::vector<cut_gauss_t> {
         inline double operator() (double x0,double y0, double z0) const {
             double ret = 0;
-            for (const auto& fun : *this) {
-                ret += fun(x0,y0,z0);
-            }
+            for (const auto& fun : *this) ret += fun(x0,y0,z0);
             return ret;
         }
     };
     const auto& from_xml = [](pugi::xml_node node) {
         field_def_t ret;
-        for (pugi::xml_node child = node.first_child(); child; child = child.next_sibling()) {
+        for (pugi::xml_node child : node.children()) {
             std::string name = child.name();
             if (name == "Gauss" || name == "Box") {
                 cut_gauss_t fun;
