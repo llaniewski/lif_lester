@@ -201,7 +201,7 @@ int main(int argc, char* argv[])
     pugi::xml_node waves = config.child("Waves");
     XATRE(waves, "No Waves element in {}", config.name());
     struct spec_elem_t {
-        double absorbtion=0;
+        double absorption=0;
         double source=0;
         double emission=0;
     };
@@ -209,8 +209,8 @@ int main(int argc, char* argv[])
     for (pugi::xml_node wave : waves.children()) {
         XATRE(std::string(wave.name()) == "Wave", "Uknown element {} in {}", wave.name(), waves.name());
         spec_elem_t spec_elem;
-        attr = wave.attribute("absorbtion");
-        if (attr) spec_elem.absorbtion = attr.as_double();
+        attr = wave.attribute("absorption");
+        if (attr) spec_elem.absorption = attr.as_double();
         attr = wave.attribute("emission");
         if (attr) spec_elem.emission = attr.as_double();
         attr = wave.attribute("source");
@@ -381,7 +381,7 @@ int main(int argc, char* argv[])
                 vx = sp.vx;
                 vy = sp.vy;
                 vz = sp.vz;
-                kappa = wv.absorbtion;
+                kappa = wv.absorption;
                 lambda = wv.emission;
                 gamma = wv.source;
                 {   // surf_source_def = surf_source_defs[i];
