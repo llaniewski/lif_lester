@@ -2,8 +2,8 @@
     <Geometry Lx="3" Ly="3" Lz="3" elx="2" ely="2" elz="2"/>
     <Rays set="lebedev/lebedev_011.txt"/>
     <Waves>
-        <Wave absorbtion="0.9" emission="0.4" source="1.0"/>
-        <Wave absorbtion="0.3" emission="0.8"/>
+        <Wave absorption="0.9" emission="0.4" source="1.0"/>
+        <Wave absorption="0.3" emission="0.8"/>
     </Waves>
     <Concentration>
         <Box xmin="1" xmax="2" ymin="1" ymax="2" zmin="1" zmax="2"/>
