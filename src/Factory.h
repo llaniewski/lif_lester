@@ -4,7 +4,7 @@
 #include <vector>
 
 // Uncomment this if you want to see what it registered
-#include <typeinfo>
+//#include <typeinfo>
 
 // Factory template is an implementation of common "Factory method pattern"
 //   https://en.wikipedia.org/wiki/Factory_method_pattern
@@ -33,7 +33,7 @@ class Factory {
 	public:
 		inline RegisterMe() {
 // Uncomment this if you want to see what it registered
-			printf("Registering < %s >!\n",typeid(T).name());
+			//printf("Registering < %s >!\n",typeid(T).name());
 			Staff.push_back(new T);
 		};
 	};

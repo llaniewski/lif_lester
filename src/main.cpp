@@ -14,7 +14,7 @@ constexpr double infty = std::numeric_limits<double>::infinity();
 int main(int argc, char* argv[])
 {    
     const dim_t dim = 3;
-    const el_o_t mesh_order  = 4;
+    const el_o_t mesh_order  = 3;
 
     const auto scope_guard = L3sterScopeGuard{argc, argv};
     const auto comm        = std::make_shared< MpiComm >(MPI_COMM_WORLD);
@@ -236,12 +236,16 @@ int main(int argc, char* argv[])
     size_t abs_idx = sol_total; sol_total++;
     size_t buf_idx = sol_total; sol_total++;
 
-
-    SolverBase* solver = makeSolver(dim, mesh_order, *comm, sol_total, mesh_Lx, mesh_elx, mesh_Ly, mesh_ely, mesh_Lz, mesh_elz);
-
-
+    printf("making solver\n"); fflush(stdout);
+    SolverBase* solver = makeSolver(solver_input{dim, mesh_order, comm, sol_total, mesh_Lx, mesh_elx, mesh_Ly, mesh_ely, mesh_Lz, mesh_elz});
+    printf("solver: %p\n", solver); fflush(stdout);
+    ATRE(solver != NULL, "Failed to produce solver. Probably unsupported combination of dimension {} and element order {}", dim, mesh_order);
+    
+    printf("init field...\n"); fflush(stdout);
     solver->initField( concentration_idx, concentration_def);
+    printf("init field...\n"); fflush(stdout);
     solver->initField( source_idx, volume_source_def);
+    printf("init field...\n"); fflush(stdout);
 
     for (size_t iter=0; iter<20; iter++) {
         solver->initField( abs_idx, 0.0);
@@ -271,7 +275,8 @@ int main(int argc, char* argv[])
                 }
 
                 printf("Iteration %3d: solving for %3d wavelength, %3d direction (%.3lf,%.3lf,%.3lf) \n", (int) iter, (int) j, (int) i, vx,vy,vz);
-                solver->solve(f_idx, vx, vy, vz, kappa, lambda, gamma, surf_source_def);
+                int iter = solver->solve(f_idx, concentration_idx, source_idx, absorption_idx, vx, vy, vz, kappa, lambda, gamma, surf_source_def);
+                if (iter > max_cg_iter) max_cg_iter = iter;
                 solver->addMult(s_idx,f_idx,sp.weight);
                 solver->addMult(abs_idx,f_idx,sp.weight,concentration_idx);
             }
