@@ -247,7 +247,7 @@ int main(int argc, char* argv[])
     solver->initField( source_idx, volume_source_def);
     printf("init field...\n"); fflush(stdout);
 
-    for (size_t iter=0; iter<20; iter++) {
+    for (size_t iter=0; iter<50; iter++) {
         solver->initField( abs_idx, 0.0);
 
         size_t max_cg_iter = 0;
@@ -278,9 +278,10 @@ int main(int argc, char* argv[])
                 int iter = solver->solve(f_idx, concentration_idx, source_idx, absorption_idx, vx, vy, vz, kappa, lambda, gamma, surf_source_def);
                 if (iter > max_cg_iter) max_cg_iter = iter;
                 solver->addMult(s_idx,f_idx,sp.weight);
-                solver->addMult(abs_idx,f_idx,sp.weight,concentration_idx);
+                solver->addMult(abs_idx,f_idx,sp.weight*kappa,concentration_idx);
             }
         }
+        std::swap(abs_idx,absorption_idx);
 
         auto export_def = ExportDefinition{std::format("{}{}_{:04}.pvtu", output_path, output_name, iter)};
         export_def.defineField("concentration", {concentration_idx});

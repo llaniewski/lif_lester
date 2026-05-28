@@ -12,8 +12,8 @@ constexpr double infty = std::numeric_limits<double>::infinity();
 template <dim_t dim, el_o_t mesh_order>
 class Solver : public SolverBase {
     std::shared_ptr< lstr::MpiComm > comm;
-    SolutionManager solution_manager;
     std::shared_ptr< mesh::MeshPartition< mesh_order > > mesh;
+    SolutionManager solution_manager;
 public:
     int domain_id;
     std::vector<int> boundary_ids;
