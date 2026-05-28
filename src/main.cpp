@@ -13,8 +13,8 @@ constexpr double infty = std::numeric_limits<double>::infinity();
 
 int main(int argc, char* argv[])
 {    
-    const dim_t dim = 3;
-    const el_o_t mesh_order  = 3;
+    dim_t dim = 0;
+    el_o_t mesh_order  = 0;
 
     const auto scope_guard = L3sterScopeGuard{argc, argv};
     const auto comm        = std::make_shared< MpiComm >(MPI_COMM_WORLD);
@@ -46,7 +46,8 @@ int main(int argc, char* argv[])
     XATRE(config, "LIF element doesn't exist");
     attr = config.attribute("dim");
     XATRE(attr, "No dim attribute in {}\n", config.name());
-    XATRE(dim == attr.as_int(), "Dimension mismatch {} != {}\n", dim, attr.value());
+    dim = attr.as_int();
+    XATRE(dim == 2 || dim == 3, "Wrong dimension {}\n", dim);
     attr = config.attribute("output");
     if (attr) output_path = attr.value();
 
@@ -55,9 +56,9 @@ int main(int argc, char* argv[])
     pugi::xml_node geom = config.child("Geometry");
     XATRE(config, "Geometry element doesn't exist");
     attr = geom.attribute("order");
-    if (attr) {
-        XATRE(mesh_order != attr.as_int(),"Mesh order mismatch {} != {}", mesh_order, attr.value());
-    }
+    XATRE(attr, "No order attribute in {}\n", geom.name());
+    mesh_order = attr.as_int();
+    XATRE(mesh_order > 0, "Wrong order: {}\n", mesh_order);
     attr = geom.attribute("Lx");
     XATRE(attr, "No Lx attribute in {}\n", geom.name());
     mesh_Ly = mesh_Lx = attr.as_double();

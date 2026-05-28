@@ -1,5 +1,5 @@
 <LIF dim="3">
-    <Geometry Lx="3" Ly="3" Lz="3" elx="2" ely="2" elz="2"/>
+    <Geometry order="3" Lx="3" Ly="3" Lz="3" elx="2" ely="2" elz="2"/>
     <Rays set="lebedev/lebedev_011.txt"/>
     <Waves>
         <Wave absorption="0.9" emission="0.4" source="1.0"/>
