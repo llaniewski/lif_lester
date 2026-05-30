@@ -1,0 +1,14 @@
+<LIF dim="2">
+    <Geometry order="3" Lx="3" Ly="3" elx="100" ely="100"/>
+    <Rays n="36"/>
+    <Waves>
+        <Wave absorption="0.9" emission="0.4" source="1.0"/>
+        <Wave absorption="0.3" emission="0.8"/>
+    </Waves>
+    <Concentration>
+        <Box xmin="1" xmax="2" ymin="1" ymax="2"/>
+    </Concentration>
+    <SurfaceSource direction="0">
+        <Gauss y="1.5" y_sigma="0.02"/>
+    </SurfaceSource>
+</LIF>

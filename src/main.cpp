@@ -181,6 +181,23 @@ int main(int argc, char* argv[])
         fclose(f);
     }
     XATRE(sphere_points.size() > 0, "No rays defined in {}",rays.name());
+    std::vector<std::array<double,3>> selected_dirs = {{1,0,0},{-1,0,0},{0,1,0},{0,-1 ,0},{0,0,1},{0,0,-1}};
+    size_t basic_directions = 0;
+    for (size_t i=0; i<selected_dirs.size(); i++) {
+        if (i >= sphere_points.size()) break;
+        for (size_t j=0; j<sphere_points.size(); j++) {
+            if (
+                fabs(selected_dirs[i][0] - sphere_points[j].vx) < 1e-6 &&
+                fabs(selected_dirs[i][1] - sphere_points[j].vy) < 1e-6 &&
+                fabs(selected_dirs[i][2] - sphere_points[j].vz) < 1e-6
+            ) {
+                std::swap(sphere_points[j],sphere_points[i]);
+                basic_directions++;
+                break;
+            }
+        }
+    }
+    XATRE(basic_directions >= 2*dim, "Did not find all basic directions in the ray set (found {}, need {} in {}D)", basic_directions, 2*dim, dim);
 
     pugi::xml_node waves = config.child("Waves");
     XATRE(waves, "No Waves element in {}", config.name());
@@ -292,7 +309,7 @@ int main(int argc, char* argv[])
         }
         export_def.defineField("absorbed", {absorption_idx});
         int sp_export = sphere_points.size();
-        if (sp_export > 6) sp_export = 6;
+        if (sp_export > basic_directions) sp_export = basic_directions;
         for (size_t j=0;j<spectrum.size();j++) {
             for (size_t i=0;i<sp_export;i++) {
                 size_t& f_idx = field_idx[i + j*sphere_points.size()];
